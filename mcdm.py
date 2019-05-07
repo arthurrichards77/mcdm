@@ -138,6 +138,15 @@ class Mcdm:
             for opt in self.options:
                 new_mcdm.set_score(opt,cri,self.get_score(opt,cri))
         return(new_mcdm)
+    
+    def select_options(self,opt_list):
+        for opt in opt_list:
+            assert opt in self.options, "No such criterion: {}".format(opt)
+        new_mcdm = Mcdm(opt_list)
+        for cri in self.criteria():
+            for opt in opt_list:
+                new_mcdm.set_score(opt,cri,self.get_score(opt,cri))
+        return(new_mcdm)
 
     def plot(self,show=True):
         width=0.1
@@ -146,7 +155,7 @@ class Mcdm:
         for (ii,cri) in enumerate(self.criteria()):
             cri_ind = [jj+ii*width for jj in range(len(self.options))]
             cri_score = [self.get_score(opt,cri) for opt in self.options]
-            ax.bar(cri_ind,cri_score,width,color=colors[ii],label=str(cri))
+            ax.bar(cri_ind,cri_score,width,color=colors[ii%len(colors)],label=str(cri))
         ax.set_xticks([jj+0.5*ii*width for jj in range(len(self.options))])
         ax.set_xticklabels(self.options)
         ax.legend()
