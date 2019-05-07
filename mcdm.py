@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from IPython.display import HTML
 
 class Mcdm:
     """m = Mcdm(opts)
@@ -14,6 +15,25 @@ class Mcdm:
     def __init__(self,opts):
         self.options = opts
         self.scores = {}
+        self._criteria = []
+    
+    def copy(self,reset_scores=False):
+        new_mcdm = Mcdm(self.options)
+        for (opt,cri) in self.scores.keys():
+            new_val = 0.0
+            if not reset_scores:
+                new_val = self.get_score(opt,cri)
+            new_mcdm.set_score(opt,cri,new_val)
+        return(new_mcdm)
+    
+    def __add__(self,other):
+        new_mcdm = self.copy()
+        for (opt,cri) in other.scores.keys():
+            assert (opt in self.options), "No such option: {}".format(opt)
+            self_val = self.get_score(opt,cri)
+            add_val = other.get_score(opt,cri)
+            new_mcdm.set_score(opt,cri,self_val+add_val)
+        return(new_mcdm)        
     
     def set_score(self,opt,cri,val):
         """m.set_score(opt,cri,val)
@@ -24,9 +44,26 @@ class Mcdm:
         included at initialization."""
         assert (opt in self.options), "No such option: {}".format(opt)
         self.scores[(opt,cri)]=val
+        # and add to critria list
+        if not cri in self._criteria:
+            self._criteria.append(cri)
+            
+    def set_scores_dict(self,score_dict):
+        """m.set_scores_dict(self,score_dict)
+        
+        Set multiple scores at once via dictionary.
+        Each key should be (opt,cri) and each value
+        should be a score.
+        Example:
+        
+        m.set_scores_dict({('Car','Speed'):1,('Car','Comfort'):-1})"""
+        for (opt,cri) in score_dict.keys():
+            assert (opt in self.options), "No such option: {}".format(opt)
+            self.set_score(opt,cri,score_dict[(opt,cri)])
             
     def criteria(self):
-        return(set([cri for (opt,cri) in self.scores]))
+        #return(set([cri for (opt,cri) in self.scores]))
+        return self._criteria
 
     def get_score(self,opt,cri):
         assert (opt in self.options), "No such option: {}".format(opt)
@@ -46,12 +83,14 @@ class Mcdm:
 
     def rescale(self):
         """Rescale all scores linearly to range [0,1]"""
+        new_mcdm = self.copy()
         mn = self.min_score()
         rg = self.max_score() - mn
         for opt in self.options:
             for cri in self.criteria():
                 new_val = (self.get_score(opt,cri) - mn)/rg
-                self.set_score(opt,cri,new_val)
+                new_mcdm.set_score(opt,cri,new_val)
+        return(new_mcdm)
 
     def weight_criteria(self,name,weights):
         for cri in weights.keys():
@@ -104,6 +143,16 @@ class Mcdm:
         row_sep = '='*8 + sep + sep.join(['='*8 for cri in self.criteria()]) + '\n'
         return(header+row_sep+rows+row_sep)
 
+    def _raw_html(self):
+        table_start = '<table>\n'
+        header = '<tr><th>{}</th>'.format('Option') + ' '.join(['<th>{}</th>'.format(cri) for cri in self.criteria()]) + '</tr>\n'
+        rows = '\n'.join(['<tr><th>{}</th>'.format(opt) + ' '.join(['<td>{:8.3f}</td>'.format(self.get_score(opt,cri)) for cri in self.criteria()]) + '</tr>' for opt in self.options])
+        table_stop = '\n</table>\n'
+        return(table_start+header+rows+table_stop)
+
+    def to_html(self):
+        return(HTML(self._raw_html()))
+    
 def travel_example():
     travel = Mcdm(('Car','Bus','Train'))
     travel.set_score('Car','Fuel',-1.0)
