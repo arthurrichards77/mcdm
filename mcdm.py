@@ -32,7 +32,7 @@ class Mcdm:
         assert (opt in self.options), "No such option: {}".format(opt)
         assert (cri in self.criteria()), "No such criterion: {}".format(cri)
         val = 0.0
-        if self.scores.has_key((opt,cri)):
+        if (opt,cri) in self.scores.keys():
             val = self.scores[(opt,cri)]
         return(val)
 
