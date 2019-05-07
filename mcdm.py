@@ -81,7 +81,7 @@ class Mcdm:
         return(min([min([self.get_score(opt,cri) for opt in self.options])
  for cri in self.criteria()]))
 
-    def rescale(self):
+    def _rescale_all(self):
         """Rescale all scores linearly to range [0,1]"""
         new_mcdm = self.copy()
         mn = self.min_score()
@@ -91,6 +91,25 @@ class Mcdm:
                 new_val = (self.get_score(opt,cri) - mn)/rg
                 new_mcdm.set_score(opt,cri,new_val)
         return(new_mcdm)
+
+    def _rescale_each_col(self):
+        """Rescale each column's scores linearly
+        such that each column fills range [0,1]"""
+        new_mcdm = self.copy()
+        for cri in self.criteria():
+            mn = self.select_criteria([cri]).min_score()
+            rg = self.select_criteria([cri]).max_score() - mn
+            for opt in self.options:
+                new_val = (self.get_score(opt,cri) - mn)/rg
+                new_mcdm.set_score(opt,cri,new_val)
+        return(new_mcdm)
+
+    def rescale(self,by_columns=False):
+        """Rescale all scores linearly to range [0,1]"""
+        if by_columns:
+            return(self._rescale_each_col())
+        else:
+            return(self._rescale_all())
 
     def weight_criteria(self,name,weights):
         for cri in weights.keys():
@@ -120,7 +139,7 @@ class Mcdm:
                 new_mcdm.set_score(opt,cri,self.get_score(opt,cri))
         return(new_mcdm)
 
-    def plot(self):
+    def plot(self,show=True):
         width=0.1
         colors=['c','m','y','k','b','r','g']
         fig,ax = plt.subplots()
@@ -131,7 +150,9 @@ class Mcdm:
         ax.set_xticks([jj+0.5*ii*width for jj in range(len(self.options))])
         ax.set_xticklabels(self.options)
         ax.legend()
-        plt.show()
+        if show:
+            plt.show()
+        return(ax)
 
     def __repr__(self):
         opt_fmt='{:8}'
